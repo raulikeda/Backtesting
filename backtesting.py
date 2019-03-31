@@ -12,10 +12,10 @@ class Order():
 
   id = 1
 
-  def __init__(self, timestamp, quantity, price):
+  def __init__(self, quantity, price):
     self.id = Order.id
     Order.id += 1
-    self.timestamp = timestamp
+    self.timestamp = ''
     self.quantity = quantity
     self.price = price
     self.executed = 0
@@ -47,9 +47,13 @@ class Book():
       data = file.read()
     
     events = data.split('\n')
+    events = events[1:]
     for event in events:
-      cols = event.split(',')
-      self.events.append(Event(cols[0], cols[1], cols[2], cols[3]))
+      cols = event.split(';')
+      if len(cols) == 4:
+        price = float(cols[2].replace(',','.'))
+        quantity = int(cols[3])
+        self.events.append(Event(cols[0], cols[1], price, quantity))
 
   def pop(self):
     if self.pos < len(self.events):
@@ -70,10 +74,10 @@ class Book():
       
       if order.quantity > 0 and self.ask is not None:
         price = self.ask.price
-        quantity = self.ask.quantity
+        quantity = order.quantity #self.ask.quantity
       elif order.quantity < 0 and self.bid is not None:
         price = self.bid.price
-        quantity = self.bid.quantity
+        quantity = order.quantity #self.bid.quantity
       else:
         price = 0
 
@@ -88,14 +92,14 @@ class Book():
 
   def close(self):
     if self.position != 0:
-      self.order(Order(self.timestamp, -self.position, 0))
+      self.order(Order(-self.position, 0))
 
   def summary(self, orders=False):
     res = 'Number of trades: {0}\n'.format(self.trades)
     res += 'P&L: {0:.2f}\n'.format(self.result)
     if orders:
       for order in self.orders:
-        res += order.print()
+        res += order.print()+'\n'
     return res
 
 class Strategy():
@@ -115,6 +119,7 @@ def evaluate(strategy, file):
     order = strategy.push(event)
     if order is not None:
       book.order(order)
+    event = book.pop()
   
   book.close()
-  return book.summary()
+  return book.summary(True)
