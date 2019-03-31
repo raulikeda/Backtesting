@@ -20,7 +20,7 @@ class Order():
     self.price = price
     self.executed = 0
   
-  def.print(self):
+  def print(self):
     return '{0} - {1}: {2}/{3}@{4}'.format(self.id, self.timestamp, self.executed, self.quantity, self.price)
 
 class Book():
