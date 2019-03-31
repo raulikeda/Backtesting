@@ -40,6 +40,8 @@ class Book():
     self.ask = None
     self.trade = None
 
+    self.timestamp = None
+
   def load(self, file):
     with open(file,'r') as file:
       data = file.read()
@@ -52,6 +54,7 @@ class Book():
   def pop(self):
     if self.pos < len(self.events):
       event = self.events[self.pos]
+      self.timestamp = event.timestamp
       self.pos += 1
       if event.type == Event.BID:
         self.bid = event
@@ -81,16 +84,16 @@ class Book():
 
       order.executed = quantity
       order.price = price
-      self.orders.append[order]
+      self.orders.append(order)
 
   def close(self):
     if self.position != 0:
-      self.order(Order(-self.position))
+      self.order(Order(self.timestamp, -self.position, 0))
 
-  def.summary(self, orders=False):
+  def summary(self, orders=False):
     res = 'Number of trades: {0}\n'.format(self.trades)
     res += 'P&L: {0:.2f}\n'.format(self.result)
-    if trades:
+    if orders:
       for order in self.orders:
         res += order.print()
     return res
@@ -111,7 +114,7 @@ def evaluate(strategy, file):
   while event is not None:
     order = strategy.push(event)
     if order is not None:
-      book.inject(order)
+      book.order(order)
   
-  book.close_position()
+  book.close()
   return book.summary()
