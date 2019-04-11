@@ -16,27 +16,41 @@ class MAVG(Strategy):
   def __init__(self):
     self.signal = 0
     self.prices = []
-    self.size = 100 #moving average window
+    self.size = 500 #moving average window
+    self.alpha = 0.0003
+    self.previous = None
 
   def push(self, event):
     if event.type == Event.TRADE:
       self.prices.append(event.price)
       if len(self.prices) >= self.size:
-        del self.prices[0]
         avg = sum(self.prices) / len(self.prices)
+
         order = None
-        if avg < event.price*1.002:
-          if self.signal == 0:
-            order = Order(-100, 0)
-          elif self.signal == 1:
-            order = Order(-200, 0)
-          self.signal = -1
-        elif avg > event.price*0.998:
-          if self.signal == 0:
-            order = Order(100, 0)
-          elif self.signal == -1:
-            order = Order(200, 0)
-          self.signal = 1
+
+        if self.previous is not None:
+          delta = avg - self.previous
+        
+          if delta <= -self.alpha:
+            if self.signal == 0:
+              order = Order(-100, 0)
+            elif self.signal == 1:
+              order = Order(-200, 0)
+            self.signal = -1
+          elif delta >= self.alpha:
+            if self.signal == 0:
+              order = Order(100, 0)
+            elif self.signal == -1:
+              order = Order(200, 0)
+            self.signal = 1
+          elif self.signal != 0:
+            order = Order(-self.signal*100, 0)
+            self.signal = 0
+
+        self.previous = avg
+        del self.prices[0]
+        if order is not None:
+          order.timestamp = event.timestamp                
         return order
     return None
 
