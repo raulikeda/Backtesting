@@ -7,8 +7,8 @@ class SAR(Strategy):
         self.sar = []
         self.highs = []
         self.lows = []
-        self.accel_min = 0.02
-        self.accel_max = 0.2
+        self.accel_min = 0.01
+        self.accel_max = 0.1
         self.accel = self.accel_min
         self.crescent = True
         self.buying = 0
@@ -32,6 +32,9 @@ class SAR(Strategy):
                     elif self.buying == 0:
                         orders.append(Order(-1, 0))
                         self.buying = -1
+                    self.accel = self.accel_min
+                else:
+                    self.accel = min(self.accel * 2, self.accel_max)
             else:
                 sar_predict = sar_prev + self.accel * (self.lows[-1] -
                                                        sar_prev)
@@ -43,6 +46,9 @@ class SAR(Strategy):
                     elif self.buying == 0:
                         orders.append(Order(1, 0))
                         self.buying = 1
+                    self.accel = self.accel_min
+                else:
+                    self.accel = min(self.accel * 2, self.accel_max)
         else:
             sar_predict = price
         self.highs.append(high)
