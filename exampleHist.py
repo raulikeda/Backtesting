@@ -12,6 +12,10 @@ class BuynHold(Strategy):
       self.bought = True
       # Send one buy order once
       return [Order(1, 0)]
+    
+    # If you need partial result in case of feedback training
+    # result = self.partialResult()
+
     return []
 
 class MAVG(Strategy):
@@ -19,31 +23,32 @@ class MAVG(Strategy):
   def __init__(self):
     self.signal = 0
     self.prices = []
-    self.size = 63    
+    self.sizeq = 17 
+    self.sizes = 72
     self.std = 0
+    self.ref = 0
 
   def push(self, event):
     price = event.price[3]
     self.prices.append(price)
-    orders = []  
-    if len(self.prices) == self.size:
-      std = np.array(self.prices).std()
-      mavg = sum(self.prices)/self.size
+    orders = []
 
-      if price >= mavg + std:
-        if self.signal == 1:
-          orders.append(Order(-1, 0))
-          orders.append(Order(-1, 0))
-        if self.signal == 0:
-          orders.append(Order(-1, 0))
-        self.signal = -1
-      elif price <= mavg - std:
+    if len(self.prices) >= self.sizeq:
+      maq = sum(self.prices[-self.sizeq:])/self.sizeq
+    if len(self.prices) == self.sizes:
+      mas = sum(self.prices)/self.sizes
+
+      if maq > mas and self.signal != 1:
         if self.signal == -1:
           orders.append(Order(1, 0))
-          orders.append(Order(1, 0))
-        if self.signal == 0:
-          orders.append(Order(1, 0))
+        orders.append(Order(1, 0))
         self.signal = 1
+      elif maq < mas and self.signal != -1:
+        if self.signal == 1:
+          orders.append(Order(-1, 0))
+        orders.append(Order(-1, 0))
+        self.signal = -1
+
 
       del self.prices[0]
 

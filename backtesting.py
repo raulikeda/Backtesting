@@ -1,5 +1,13 @@
 import math
 
+def sign(number):
+  if number > 0:
+    return 1
+  elif number < 0:
+    return -1
+  return 0
+
+
 class Event():
 
   BID, ASK, TRADE, CANDLE = ['BID', 'ASK', 'TRADE', 'CANDLE']
@@ -25,14 +33,20 @@ class Leg():
     else:
       return ''
 
-
 class Order():
 
-  id = 1
+  id = 0
+
+  NEW, FILLED, REJECTED = ['NEW', 'FILLED', 'REJECTED']
+
+  @staticmethod
+  def nextId():
+    Order.id += 1
+    return Order.id
 
   def __init__(self, quantity, price):
-    self.id = Order.id
-    Order.id += 1
+    self.id = Order.nextId()
+    self.status = Order.NEW
     self.timestamp = ''
     self.quantity = quantity
     self.price = price
@@ -41,35 +55,18 @@ class Order():
   def print(self):
     return '{0} - {1}: {2}/{3}@{4}'.format(self.id, self.timestamp, self.executed, self.quantity, self.price)
 
-class Book():
+class MarketData():
 
-  def __init__(self):
+  TICK, HIST = ['TICK', 'HIST']
 
-    #portfolio
-    self.samplesize = 0
-    self.position = 0
-    self.result = 0
-    self.notional = 0
-    self.trades = 0
-    self.orders = []
-    self.legs = [Leg()] #sign, buy price, buy quantity, sell quantity, sell price
-
-    #market data
+  def __init__(self, type, file):
     self.pos = 0
     self.events = []
-    self.bid = None
-    self.ask = None
-    self.trade = None
-
-    self.timestamp = None  
-
-  @staticmethod
-  def sign(number):
-    if number > 0:
-      return 1
-    elif number < 0:
-      return -1
-    return 0
+    self.samplesize = 0
+    if type == MarketData.TICK:
+      self.loadTick(file)
+    elif type == MarketData.HIST:
+      self.loadHist(file)
 
   def loadTick(self, file):
     with open(file,'r') as file:
@@ -99,65 +96,141 @@ class Book():
 
   def pop(self):
     if self.pos < len(self.events):
-      event = self.events[self.pos]
-      self.timestamp = event.timestamp
-      self.pos += 1
-      if event.type == Event.BID:
-        self.bid = event
-      elif event.type == Event.ASK:
-        self.ask = event
-      elif event.type == Event.TRADE:
-        self.samplesize += 1
-        self.trade = event
-      elif event.type == Event.CANDLE:
-        self.samplesize += 1
-        self.bid = Event(event.timestamp, Event.BID, event.price[3], event.quantity)
-        self.ask = Event(event.timestamp, Event.ASK, event.price[3], event.quantity)
-        self.trade = event
+      event = self.events[self.pos]      
+      self.pos += 1      
       return event
     return None
   
-  def order(self, order):
-    if order is not None:
-      if Book.sign(self.position) * Book.sign(self.position + order.quantity) == -1:
-        raise ValueError('Error closing position: more quantity than necessary.')
+  def evaluate(self, book):
+    event = self.pop()
+    while event is not None:
+      book.inject(event)
+      event = self.pop()
 
-      if order.quantity > 0 and self.ask is not None:
+
+
+class Book():
+
+  def __init__(self):
+
+    #portfolio
+    self.position = {}
+    self.orders = {}
+    
+    #listeners
+    self.listeners = []
+
+    #market data
+    self.bid = None
+    self.ask = None
+    self.trade = None
+    self.timestamp = None  
+
+  def inject(self, event):
+    self.timestamp = event.timestamp
+    if event.type == Event.BID:
+      self.bid = event
+    elif event.type == Event.ASK:
+      self.ask = event
+    elif event.type in [Event.TRADE, Event.CANDLE]:
+      if event.type == Event.CANDLE:
+        self.bid = Event(event.timestamp, Event.BID, event.price[3], event.quantity)
+        self.ask = Event(event.timestamp, Event.ASK, event.price[3], event.quantity)
+      self.trade = event
+      for listener in self.listeners:
+        self.submit(listener.id, listener.event(event), listener.fill)
+
+  def subscribe(self, strategy):
+    self.position[strategy.id] = 0
+    self.orders[strategy.id] = []
+    self.listeners.append(strategy)
+
+  def submit(self, id, orders, fill):
+    for order in orders:
+      price = 0
+
+      if sign(self.position[id]) * sign(self.position[id] + order.quantity) == -1:
+        order.status = Order.REJECTED
+      elif order.quantity > 0 and self.ask is not None:
         price = self.ask.price
         quantity = order.quantity #self.ask.quantity
       elif order.quantity < 0 and self.bid is not None:
         price = self.bid.price
         quantity = order.quantity #self.bid.quantity
-      else:
-        price = 0
 
       if price != 0:
 
-        self.trades += 1
-        self.position += quantity
-        self.result -= quantity*price
-        if quantity > 0:
-          self.notional += quantity*price
-        else:
-          self.notional -= quantity*price
-
-        if quantity != 0:
-          idx = Book.sign(quantity)
-          self.legs[-1].price[idx] = (self.legs[-1].price[idx]*self.legs[-1].quantity[idx] + price*quantity)/(self.legs[-1].quantity[idx] + quantity)
-          self.legs[-1].quantity[idx] += quantity
-
-        if Book.sign(self.position) == 0:
-          self.legs.append(Leg())
-        elif self.legs[-1].sign == 0:
-          self.legs[-1].sign = Book.sign(self.position)
-
+        self.position[id] += quantity        
         order.executed = quantity
         order.price = price      
+        self.orders[id].append(order)
+        fill(order)
+
+
+class Strategy():
+
+  id = 0
+
+  @staticmethod
+  def nextId():
+    Order.id += 1
+    return Order.id
+
+  def __init__(self):
+    pass
+
+  def clear(self):
+    self.id = Strategy.nextId()
+    self.position = 0
+    self.last = 0
+    self.legs = [Leg()]
+    self.trades = 0
+    self.result = 0
+    self.notional = 0
+    self.orders = []
+
+  def event(self, event):
+    if event.type == Event.TRADE:
+      self.last = event.price
+    elif event.type == Event.CANDLE:
+      self.last = event.price[3]
+    return self.push(event)
+
+  def push(self, event):
+    pass
+
+  def fill(self, order):
+    if order is not None:
+      if order.price != 0:
+
+        self.trades += 1
+        self.position += order.quantity
+        self.result -= order.quantity*order.price
+        if order.quantity > 0:
+          self.notional += order.quantity*order.price
+        else:
+          self.notional -= order.quantity*order.price
+
+        if order.quantity != 0:
+          idx = sign(order.quantity)
+          self.legs[-1].price[idx] = (self.legs[-1].price[idx]*self.legs[-1].quantity[idx] + order.price*order.quantity)/(self.legs[-1].quantity[idx] + order.quantity)
+          self.legs[-1].quantity[idx] += order.quantity
+
+        if sign(self.position) == 0:
+          self.legs.append(Leg())
+        elif self.legs[-1].sign == 0:
+          self.legs[-1].sign = sign(self.position)
+
         self.orders.append(order)
 
   def close(self):
     if self.position != 0:
-      self.order(Order(-self.position, 0))
+      return [Order(-self.position, 0)]
+    else:
+      return []
+
+  def partialResult(self):
+    return self.result + self.position*self.last
 
   def summary(self, orders=False, tax=0.00024, fee=0):
     
@@ -181,8 +254,8 @@ class Book():
           mp = pro
         if pro < md:
           md = pro
-
-    res = 'Number of events: {0}\n'.format(self.samplesize)
+    res = ''
+    #res += 'Number of events: {0}\n'.format(self.samplesize)
     res += 'Number of trades: {0}\n'.format(nt)
     res += 'Gross P&L: {0:.2f}\n'.format(pnl)
     res += 'Gross Accumulated return: {0:.2f}%\n'.format(100 * ret)
@@ -205,32 +278,17 @@ class Book():
 
     return res
 
-  def evaluate(self, strategy):
-    event = self.pop()
-    while event is not None:
-      orders = strategy.push(event)    
-      for order in orders:
-        self.order(order)
-      event = self.pop()
-  
-    self.close()
-
-class Strategy():
-
-  def __init__(self):
-    pass
-
-  def push(self, event):
-    pass
-
-def evaluateTick(strategy, file):
+def evaluate(strategy, type, file, orders):
+  strategy.clear()
   book = Book()
-  book.loadTick(file)
-  book.evaluate(strategy)
-  return book.summary(False)
+  book.subscribe(strategy)
+  data = MarketData(type, file)
+  data.evaluate(book)
+  book.submit(strategy.id, strategy.close(), strategy.fill)
+  return strategy.summary(orders)
 
-def evaluateHist(strategy, file):
-  book = Book()
-  book.loadHist(file)
-  book.evaluate(strategy)
-  return book.summary(False)
+def evaluateTick(strategy, file, orders=False):
+  return evaluate(strategy, MarketData.TICK, file, orders)
+
+def evaluateHist(strategy, file, orders=False):
+  return evaluate(strategy, MarketData.HIST, file, orders)

@@ -5,7 +5,7 @@ class RSI(Strategy):
 
   OVERBOUGHT = 65
   OVERSOLD = 40
-  SIZE = 60
+  SIZE = 5
 
   def __init__(self):
     self.prices = []
