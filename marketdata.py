@@ -67,10 +67,10 @@ class MarketData():
                  float(cols[2].replace(',','.')))
         quantity = 0
         
-        if date.toordinal() not in self.events:
-          self.events[date.toordinal()] = []
+        if date.timestamp() not in self.events:
+          self.events[date.timestamp()] = []        
           
-        self.events[date.toordinal()].append(Event(instrument, date, type, price, quantity))
+        self.events[date.timestamp()].append(Event(instrument, date, type, price, quantity))
 
   def run(self, ts):
     dates = list(self.events.keys())

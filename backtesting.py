@@ -28,3 +28,6 @@ def evaluateTick(strategy, files):
 
 def evaluateHist(strategy, files):
   return evaluate(strategy, MarketData.HIST, files)
+
+def evaluateIntr(strategy, files):
+  return evaluate(strategy, MarketData.INTR, files)
