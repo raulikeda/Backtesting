@@ -61,7 +61,10 @@ class MarketData():
       if len(cols) == 5:
 
         date = datetime.strptime(cols[0], '%d/%m/%Y %H:%M:%S')
-        price = float(cols[2].replace(',','.'))
+        price = (float(cols[1].replace(',','.')), 
+                 float(cols[3].replace(',','.')), 
+                 float(cols[4].replace(',','.')), 
+                 float(cols[2].replace(',','.')))
         quantity = 0
         
         if date.toordinal() not in self.events:
