@@ -30,7 +30,11 @@ class Book():
           if order.quantity < 0:
             if order.price <= event.price:
               rem = order.quantity - order.executed
-              qty = max(rem, -event.quantity)
+              
+              if event.quantity == 0:
+                qty = rem
+              else:
+                qty = max(rem, -event.quantity)
 
               average = order.average * order.executed + qty * event.price
 
@@ -48,7 +52,11 @@ class Book():
           if order.quantity > 0:
             if order.price >= event.price:
               rem = order.quantity - order.executed
-              qty = min(rem, event.quantity)
+
+              if event.quantity == 0:
+                qty = rem
+              else:
+                qty = min(rem, event.quantity)
 
               average = order.average * order.executed + qty * event.price
 
@@ -65,7 +73,11 @@ class Book():
         for order in self.orders:
           if order.quantity > 0 and order.price >= event.price:
             rem = order.quantity - order.executed
-            qty = min(rem, event.quantity)
+
+            if event.quantity == 0:
+              qty = rem
+            else:
+              qty = min(rem, event.quantity)
 
             average = order.average * order.executed + qty * event.price
 
@@ -79,7 +91,11 @@ class Book():
 
           if order.quantity < 0 and order.price <= event.price:
             rem = order.quantity - order.executed
-            qty = max(rem, -event.quantity)
+
+            if event.quantity == 0:
+              qty = rem
+            else:
+              qty = max(rem, -event.quantity)
 
             average = order.average * order.executed + qty * event.price
 
@@ -152,3 +168,17 @@ class Book():
               order.status = Order.PARTIAL
               self.orders.append(order)
           self.fill(order.id, order.average, order.executed, order.status)
+        elif order.quantity != 0:
+          self.orders.append(order)
+
+  def cancel(self, id):
+    i = 0
+    while i < len(self.orders):
+      if self.orders[i].id == id:
+        order = self.orders[i]
+        del self.orders[i]
+        order.status = Order.CANCELED        
+        self.fill(order.id, 0, 0, order.status)
+        i = len(self.orders)
+      else:
+        i += 1

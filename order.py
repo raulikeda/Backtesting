@@ -2,7 +2,7 @@ class Order():
 
   id = 0
 
-  NEW, PARTIAL, FILLED, REJECTED = ['NEW', 'PARTIAL', 'FILLED', 'REJECTED']
+  NEW, PARTIAL, FILLED, REJECTED, CANCELED = ['NEW', 'PARTIAL', 'FILLED', 'REJECTED', 'CANCELED']
 
   @staticmethod
   def nextId():

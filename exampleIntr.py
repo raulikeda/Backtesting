@@ -1,4 +1,4 @@
-from backtesting import evaluateHist
+from backtesting import evaluateIntr
 from strategy import Strategy
 from order import Order
 import numpy as np
@@ -6,14 +6,23 @@ import numpy as np
 class BuynHold(Strategy):
   
   def __init__(self):
-    self.bought = False
+    self.bought = {}
+    self.orders = []
 
   def push(self, event):
     # If didnt buy yet, do it
-    if not self.bought:
-      self.bought = True
+    if event.instrument not in self.bought:
+      self.bought[event.instrument] = False
+
+    if not self.bought[event.instrument]:
+      self.bought[event.instrument] = True
       # Send one buy order once
-      return [Order(event.instrument, 1, 0)]
+      order = Order(event.instrument, 1, event.price[3] - 0.01)
+      self.orders.append(order)
+      return [order]
+    else:
+      for order in self.orders:
+        self.cancel(self.id, order.id)
     
     # If you need partial result in case of feedback training
     # result = self.partialResult()
@@ -55,5 +64,5 @@ class MAVG(Strategy):
 
     return orders
 
-print(evaluateHist(BuynHold(), {'IBOV':'^BVSP.csv'}))
-print(evaluateHist(MAVG(), {'IBOV':'^BVSP.csv'}))
+print(evaluateIntr(BuynHold(), {'USDBRL':'USDBRL.csv', 'PETR3':'PETR3.csv'}))
+print(evaluateIntr(MAVG(), {'USDBRL':'USDBRL.csv'}))

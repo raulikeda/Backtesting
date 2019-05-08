@@ -27,6 +27,12 @@ class Strategy():
 
     self.orders = []
 
+  def cancel(self, owner, id): 
+    pass
+    
+  def submit(self, id, orders): 
+    pass
+
   def event(self, event):
 
     self.last[event.instrument] = event.price

@@ -35,6 +35,8 @@ class TradingSystem():
   def subscribe(self, instrument, strategy):
     if strategy.id not in self.strategies:
       self.strategies[strategy.id] = strategy
+      strategy.cancel = self.cancel
+      strategy.submit = self.submit
 
     if instrument in self.books:
       if strategy.id not in self.position[instrument]:
@@ -66,6 +68,12 @@ class TradingSystem():
         if instrument in self.books:
           self.books[instrument].submit(order)
 
+  def cancel(self, owner, id):
+    if id in self.orders:
+      if self.orders[id].owner == owner:
+        instrument = self.orders[id].instrument
+        if instrument in self.books:
+          self.books[instrument].cancel(id)
 
   def fill(self, id, price, quantity, status):
     
