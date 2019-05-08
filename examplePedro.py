@@ -1,5 +1,7 @@
-from backtesting import Strategy, Order, Event, evaluateHist
-
+from backtesting import evaluateHist
+from strategy import Strategy
+from order import Order
+from event import Event
 
 class SAR(Strategy):
 
@@ -27,10 +29,10 @@ class SAR(Strategy):
                 if sar_predict > price:
                     self.crescent = False
                     if self.buying == 1:
-                        orders += [Order(-1, 0), Order(-1, 0)]
+                        orders += [Order(event.instrument, -1, 0), Order(event.instrument, -1, 0)]
                         self.buying = -1
                     elif self.buying == 0:
-                        orders.append(Order(-1, 0))
+                        orders.append(Order(event.instrument, -1, 0))
                         self.buying = -1
                     self.accel = self.accel_min
                 else:
@@ -41,10 +43,10 @@ class SAR(Strategy):
                 if sar_predict < price:
                     self.crescent = True
                     if self.buying == -1:
-                        orders += [Order(1, 0), Order(1, 0)]
+                        orders += [Order(event.instrument, 1, 0), Order(event.instrument, 1, 0)]
                         self.buying = 1
                     elif self.buying == 0:
-                        orders.append(Order(1, 0))
+                        orders.append(Order(event.instrument, 1, 0))
                         self.buying = 1
                     self.accel = self.accel_min
                 else:
@@ -57,4 +59,4 @@ class SAR(Strategy):
         return orders
 
 
-print(evaluateHist(SAR(), '^BVSP.csv'))
+print(evaluateHist(SAR(), {'IBOV':'^BVSP.csv'}))

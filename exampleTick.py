@@ -1,4 +1,8 @@
-from backtesting import Strategy, Order, Event, evaluateTick
+from backtesting import evaluateTick
+from strategy import Strategy
+from order import Order
+from event import Event
+
 import numpy as np
 
 class BuynHoldTick(Strategy):
@@ -12,7 +16,7 @@ class BuynHoldTick(Strategy):
       if not self.bought:
         self.bought = True
         # Send one buy order once
-        return [Order(100, 0)]
+        return [Order(event.instrument, 100, 0)]
       return []
     return []
 
@@ -35,15 +39,15 @@ class MAVGTick(Strategy):
 
         if price >= mavg + std:
           if self.signal == 1:
-            orders.append(Order(-100, 0))
+            orders.append(Order(event.instrument, -100, 0))
           if self.signal == 0:
-            orders.append(Order(-100, 0))
+            orders.append(Order(event.instrument, -100, 0))
           self.signal = -1
         elif price <= mavg - std:
           if self.signal == -1:
-            orders.append(Order(100, 0))
+            orders.append(Order(event.instrument, 100, 0))
           if self.signal == 0:
-            orders.append(Order(100, 0))
+            orders.append(Order(event.instrument, 100, 0))
           self.signal = 1        
 
         del self.prices[0]
@@ -51,5 +55,5 @@ class MAVGTick(Strategy):
       return orders
     return []
 
-print(evaluateTick(BuynHoldTick(), '2018-03-07.csv'))
-print(evaluateTick(MAVGTick(), '2018-03-07.csv'))
+print(evaluateTick(BuynHoldTick(), {'PETR4':'2018-03-07.csv'}))
+print(evaluateTick(MAVGTick(), {'PETR4':'2018-03-07.csv'}))

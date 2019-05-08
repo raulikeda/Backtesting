@@ -1,4 +1,7 @@
-from backtesting import Strategy, Order, Event, evaluateHist
+from backtesting import evaluateHist
+from strategy import Strategy
+from order import Order
+from event import Event
 import numpy as np
 
 class RSI(Strategy):
@@ -42,18 +45,18 @@ class RSI(Strategy):
       rsi = self._calculate_rsi()
       if rsi >= self.OVERBOUGHT:
         if self.signal == 1:
-          orders.append(Order(-1, 0))
-          orders.append(Order(-1, 0))
+          orders.append(Order(event.instrument, -1, 0))
+          orders.append(Order(event.instrument, -1, 0))
         if self.signal == 0:
-          orders.append(Order(-1, 0))
+          orders.append(Order(event.instrument, -1, 0))
         self.signal = -1
       elif rsi <= self.OVERSOLD:
         if self.signal == -1:
-          orders.append(Order(1, 0))
-          orders.append(Order(1, 0))
+          orders.append(Order(event.instrument, 1, 0))
+          orders.append(Order(event.instrument, 1, 0))
         if self.signal == 0:
-          orders.append(Order(1, 0))
+          orders.append(Order(event.instrument, 1, 0))
         self.signal = 1
     return orders
 
-print(evaluateHist(RSI(), '^BVSP.csv'))
+print(evaluateHist(RSI(), {'IBOV':'^BVSP.csv'}))
