@@ -2,156 +2,167 @@ import math
 from event import Event, sign
 from order import Order
 
+
 class Strategy():
 
-  id = 0
+    id = 0
 
-  @staticmethod
-  def nextId():
-    Strategy.id += 1
-    return Strategy.id
+    @staticmethod
+    def nextId():
+        Strategy.id += 1
+        return Strategy.id
 
-  def __init__(self):
-    pass
+    def __init__(self):
+        pass
 
-  def clear(self):
-    self.id = Strategy.nextId()
+    def clear(self):
+        self.id = Strategy.nextId()
 
-    self.position = {}
-    self.last = {}
+        self.position = {}
+        self.last = {}
 
-    self.legs = []
+        self.legs = []
 
-    self.result = {}
-    self.notional = {}
+        self.result = {}
+        self.notional = {}
 
-    self.orders = []
+        self.orders = []
 
-  def cancel(self, owner, id): 
-    pass
-    
-  def submit(self, id, orders): 
-    pass
+    def cancel(self, owner, id):
+        pass
 
-  def event(self, event):
+    def submit(self, id, orders):
+        pass
 
-    self.last[event.instrument] = event.price
-    return self.push(event)
+    def event(self, event):
 
-  def push(self, event):
-    pass
+        self.last[event.instrument] = event.price
+        return self.push(event)
 
-  def fill(self, instrument, price, quantity, status):
+    def push(self, event):
+        pass
 
-    if price != 0:
+    def fill(self, instrument, price, quantity, status):
 
-      if instrument not in self.position:
-        self.position[instrument] = 0
-      
-      if instrument not in self.result:
-        self.result[instrument] = 0
+        if price != 0:
 
-      if instrument not in self.notional:
-        self.notional[instrument] = 0
+            if instrument not in self.position:
+                self.position[instrument] = 0
 
-      self.position[instrument] += quantity
-      self.result[instrument] -= quantity*price
+            if instrument not in self.result:
+                self.result[instrument] = 0
 
-      if quantity > 0:
-        self.notional[instrument] += quantity*price
-      else:
-        self.notional[instrument] -= quantity*price
+            if instrument not in self.notional:
+                self.notional[instrument] = 0
 
-      if self.zeroed():
-        self.legs.append((self.totalResult(), self.totalNotional()))
+            self.position[instrument] += quantity
+            self.result[instrument] -= quantity*price
 
-  def zeroed(self):
-    for position in self.position.values():
-      if position != 0:
-        return False
-    return True
+            if quantity > 0:
+                self.notional[instrument] += quantity*price
+            else:
+                self.notional[instrument] -= quantity*price
 
-  def close(self):
+            if self.zeroed():
+                self.legs.append((self.totalResult(), self.totalNotional()))
 
-    orders = []
-    for instrument, position in self.position.items():
-      if position != 0:
-        orders.append(Order(instrument, -position, 0))
+    def zeroed(self):
+        for position in self.position.values():
+            if position != 0:
+                return False
+        return True
 
-    return orders
+    def close(self):
 
-  def partialResult(self):
-    res = {}
-    for instrument, result in self.result.items():
-      res[instrument] = result + self.position[instrument]*self.last[instrument]
-    return res
+        orders = []
+        for instrument, position in self.position.items():
+            if position != 0:
+                orders.append(Order(instrument, -position, 0))
 
-  def totalNotional(self):
-    res = 0
-    for notional in self.notional.values():
-      res += notional
-    return res
+        return orders
 
-  def totalResult(self):
-    res = 0
-    for result in self.result.values():
-      res += result
-    return res
+    def partialResult(self):
+        res = {}
+        for instrument, result in self.result.items():
+            res[instrument] = result + \
+                self.position[instrument]*self.last[instrument]
+        return res
 
-  def summary(self, tax=0.00024, fee=0):
+    def totalNotional(self):
+        res = 0
+        for notional in self.notional.values():
+            res += notional
+        return res
 
-    nt = len(self.legs)
-    hr = 0
-    pnl = 0
-    ret = 0
-    net = 0
-    avg = 0
-    mp = -float("inf")
-    md = float("inf")
-    
-    if nt > 0:
-      pnl = self.legs[-1][0]
-      net = self.legs[-1][1]
-      ret = pnl / (net/2)
+    def totalResult(self):
+        res = 0
+        for result in self.result.values():
+            res += result
+        return res
 
-      if pnl > 0:
-        hr += 1 
+    def summary(self, tax=0.00024, fee=0):
 
-      mp = self.legs[0][0]
-      md = self.legs[0][0]
+        # Number of trades
+        nt = len(self.legs)
 
-      avg = self.legs[0][0]/(self.legs[0][1]/2)
+        # Hitting ratio
+        hr = 0
 
-      i = 1
-      while i < len(self.legs):
-        res = self.legs[i][0]-self.legs[i-1][0]
-        amo = (self.legs[i][1]-self.legs[i-1][1])/2
-        avg += res/amo
+        # P&L
+        pnl = 0
 
-        if res > mp:
-          mp = res
-        if res < md:
-          md = res
+        # Accumulated Return
+        ret = 0
 
-        if res > 0:
-          hr += 1
-          
-        i += 1
+        net = 0
+        avg = 0
+        mp = -float("inf")
+        md = float("inf")
 
-      avg = avg/nt
-      hr = hr/nt
-    
-    res = ''
-    res += 'Number of trades: {0}\n'.format(nt)
-    res += 'Gross P&L: {0:.2f}\n'.format(pnl)
-    res += 'Gross Accumulated return: {0:.2f}%\n'.format(100 * ret)
-    res += 'Gross Average Return: {0:.2f}%\n'.format(100 * avg)
+        if nt > 0:
+            pnl = self.legs[-1][0]
 
-    net = pnl - net * tax - nt * fee
-    res += 'Net P&L: {0:.2f}\n'.format(net)
-    
-    res += 'Hitting ratio: {0:.2f}%\n'.format(100*hr)
-    res += 'Max Profit: {0:.2f}\n'.format(mp)
-    res += 'Max Drawdown: {0:.2f}\n'.format(md)
+            amo = self.legs[-1][1]
+            ret = pnl / (amo/2)
 
-    return res
+            if pnl > 0:
+                hr += 1
+
+            mp = self.legs[0][0]
+            md = self.legs[0][0]
+
+            avg = self.legs[0][0]/(self.legs[0][1]/2)
+
+            i = 1
+            while i < len(self.legs):
+                res = self.legs[i][0]-self.legs[i-1][0]
+                amo = (self.legs[i][1]-self.legs[i-1][1])/2
+                avg += res/amo
+
+                if res > mp:
+                    mp = res
+                if res < md:
+                    md = res
+
+                if res > 0:
+                    hr += 1
+
+                i += 1
+
+            avg = avg/nt
+            hr = hr/nt
+
+        res = ''
+        res += 'Number of trades: {0}\n'.format(nt)
+        res += 'Gross P&L: {0:.2f}\n'.format(pnl)
+        res += 'Gross Accumulated return: {0:.2f}%\n'.format(100 * ret)
+        res += 'Gross Average Return: {0:.2f}%\n'.format(100 * avg)
+
+        net = pnl - amo * tax - nt * fee
+        res += 'Net P&L: {0:.2f}\n'.format(net)
+
+        res += 'Hitting ratio: {0:.2f}%\n'.format(100*hr)
+        res += 'Max Profit: {0:.2f}\n'.format(mp)
+        res += 'Max Drawdown: {0:.2f}\n'.format(md)
+
+        return res
