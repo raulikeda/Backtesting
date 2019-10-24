@@ -118,7 +118,7 @@ class Strategy():
         avg = 0
         mp = -float("inf")
         md = float("inf")
-
+        amo = 0
         if nt > 0:
             pnl = self.legs[-1][0]
 
