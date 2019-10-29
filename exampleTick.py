@@ -40,15 +40,16 @@ class MAVGTick(Strategy):
                 mavg = sum(self.prices)/self.size
 
                 if price >= mavg + std:
-                    if self.signal == 1:
+                    if self.signal == 1: 
                         orders.append(Order(event.instrument, -100, 0))
-                    if self.signal == 0:
+                        orders.append(Order(event.instrument, -100, 0))
+                    if self.signal == 0: 
                         orders.append(Order(event.instrument, -100, 0))
                     self.signal = -1
                 elif price <= mavg - std:
-                    if self.signal == -1:
-                        orders.append(Order(event.instrument, 100, 0))
-                    if self.signal == 0:
+                    if self.signal == -1: 
+                        orders.append(Order(event.instrument, 200, 0))
+                    if self.signal == 0: 
                         orders.append(Order(event.instrument, 100, 0))
                     self.signal = 1
 
