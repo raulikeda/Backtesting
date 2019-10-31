@@ -42,7 +42,7 @@ class Strategy():
     def push(self, event):
         pass
 
-    def fill(self, instrument, price, quantity, status):
+    def fill(self, id, instrument, price, quantity, status):
 
         if price != 0:
 
