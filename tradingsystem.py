@@ -90,4 +90,4 @@ class TradingSystem():
 
             if owner in self.strategies:
                 strategy = self.strategies[owner]
-                strategy.fill(instrument, price, quantity, status)
+                strategy.fill(id, instrument, price, quantity, status)
