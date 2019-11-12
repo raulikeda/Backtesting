@@ -145,7 +145,7 @@ class Book():
                               order.executed, order.status)
 
             else:  # LMT order
-                if order.quantity > 0 and order.price >= self.ask.price:
+                if self.ask is not None and order.quantity > 0 and order.price >= self.ask.price:
                     if self.ask.quantity == 0:
                         order.executed = order.quantity
                         order.average = self.ask.price
@@ -161,7 +161,7 @@ class Book():
                             self.orders.append(order)
                     self.fill(order.id, order.average,
                               order.executed, order.status)
-                elif order.quantity < 0 and order.price <= self.bid.price:
+                elif self.bid is not None and order.quantity < 0 and order.price <= self.bid.price:
                     if self.bid.quantity == 0:
                         order.executed = order.quantity
                         order.average = self.bid.price
