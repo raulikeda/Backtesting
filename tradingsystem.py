@@ -63,7 +63,7 @@ class TradingSystem():
                 order.status = Order.REJECTED
                 if id in self.strategies:
                     strategy = self.strategies[id]
-                    strategy.fill(instrument, 0, 0, order.status)
+                    strategy.fill(order.fill, instrument, 0, 0, order.status)
             else:
                 if order.id not in self.orders:
                     self.orders[order.id] = order
