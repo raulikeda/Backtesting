@@ -42,8 +42,8 @@ class MonkeyTrade(Strategy):
 
         return orders
 
-    def fill(self, instrument, price, quantity, status):
-        super().fill(instrument, price, quantity, status)
+    def fill(self, id, instrument, price, quantity, status):
+        super().fill(id, instrument, price, quantity, status)
         self.side += quantity
         print(self.position)
 
