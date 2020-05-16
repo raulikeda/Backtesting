@@ -47,6 +47,8 @@ class TradingSystem():
                 self.listeners[instrument].append(strategy.id)
 
     def submit(self, id, orders):
+        if orders is None:
+            orders = []
 
         for order in orders:
 

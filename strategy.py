@@ -102,19 +102,28 @@ class Strategy():
 
     def summary(self, tax=0.00024, fee=0):
 
+        # Number of trades
         nt = len(self.legs)
+
+        # Hitting ratio
         hr = 0
+
+        # P&L
         pnl = 0
+
+        # Accumulated Return
         ret = 0
+
         net = 0
         avg = 0
         mp = -float("inf")
         md = float("inf")
-
+        amo = 0
         if nt > 0:
             pnl = self.legs[-1][0]
-            net = self.legs[-1][1]
-            ret = pnl / (net/2)
+
+            amo = self.legs[-1][1]
+            ret = pnl / (amo/2)
 
             if pnl > 0:
                 hr += 1
@@ -149,7 +158,7 @@ class Strategy():
         res += 'Gross Accumulated return: {0:.2f}%\n'.format(100 * ret)
         res += 'Gross Average Return: {0:.2f}%\n'.format(100 * avg)
 
-        net = pnl - net * tax - nt * fee
+        net = pnl - amo * tax - nt * fee
         res += 'Net P&L: {0:.2f}\n'.format(net)
 
         res += 'Hitting ratio: {0:.2f}%\n'.format(100*hr)
