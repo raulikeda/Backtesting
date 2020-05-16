@@ -18,7 +18,7 @@ class BuynHold(Strategy):
         if not self.bought[event.instrument]:
             self.bought[event.instrument] = True
             # Send one buy order once
-            order = Order(event.instrument, 1, event.price[3] - 0.01)
+            order = Order(event.instrument, 1, 0)
             self.orders.append(order)
             return [order]
         else:
