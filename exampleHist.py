@@ -56,4 +56,4 @@ class MAVG(Strategy):
     return orders
 
 print(evaluateHist(BuynHold(), {'IBOV':'^BVSP.csv'}))
-print(evaluateHist(MAVG(), {'IBOV':'^BVSP.csv'}))
+#print(evaluateHist(MAVG(), {'IBOV':'^BVSP.csv'}))
