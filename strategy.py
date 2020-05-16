@@ -25,8 +25,12 @@ class Strategy():
 
         self.result = {}
         self.notional = {}
+        self.parcialResult = {}
 
         self.orders = []
+
+        # dicionario com listas dos precos de cada instrumento para plotar os graficos de preco X tempo
+        self.eventPrices = {}
 
     def cancel(self, owner, id):
         pass
@@ -35,8 +39,15 @@ class Strategy():
         pass
 
     def event(self, event):
+        if event.instrument not in self.eventPrices:
+            self.eventPrices[event.instrument] = []
 
         self.last[event.instrument] = event.price
+
+        self.partialResult()
+
+        self.addPrice(event)
+
         return self.push(event)
 
     def push(self, event):
@@ -54,6 +65,9 @@ class Strategy():
 
             if instrument not in self.notional:
                 self.notional[instrument] = 0
+
+            if instrument not in self.parcialResult:
+                self.parcialResult[instrument] = []
 
             self.position[instrument] += quantity
             self.result[instrument] -= quantity*price
@@ -82,11 +96,39 @@ class Strategy():
         return orders
 
     def partialResult(self):
-        res = {}
-        for instrument, result in self.result.items():
-            res[instrument] = result + \
-                self.position[instrument]*self.last[instrument]
-        return res
+        '''
+        P&L: position size * (sell price - buy price)
+        P&L for bought position: position * (mark price - entry price)
+        P&L for sold position: position * (entry price - mark price)
+
+        As in this case the P&L is cumulative, it is necessary to add the old P&L value:
+            pnl = position * sell price - position * buy price + pnl
+
+        '''
+
+        for instrument in self.eventPrices.keys():
+
+            if instrument not in self.parcialResult:
+                self.parcialResult[instrument] = []
+                
+
+            if isinstance(self.last[instrument], float):
+                price = self.last[instrument]
+            else:
+                price = self.last[instrument][3]
+
+            if instrument in self.position:
+                if self.position[instrument] != 0:
+                    pnl = self.result[instrument] + \
+                        self.position[instrument] * price
+                else:
+                    pnl = self.parcialResult[instrument][-1]
+            else:
+                pnl = 0                
+
+            self.parcialResult[instrument].append(pnl)
+            
+        return
 
     def totalNotional(self):
         res = 0
@@ -99,6 +141,14 @@ class Strategy():
         for result in self.result.values():
             res += result
         return res
+
+    def addPrice(self, event):
+        if (isinstance(event.price, float)):
+            if event.type == "TRADE":
+                self.eventPrices[event.instrument].append(event.price)
+        else:
+            self.eventPrices[event.instrument].append(event.price[3])
+
 
     def summary(self, tax=0.00024, fee=0):
 
