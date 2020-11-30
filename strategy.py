@@ -29,9 +29,6 @@ class Strategy():
 
         self.orders = []
 
-        # dicionario com listas dos precos de cada instrumento para plotar os graficos de preco X tempo
-        self.eventPrices = {}
-
     def cancel(self, owner, id):
         pass
 
@@ -39,15 +36,9 @@ class Strategy():
         pass
 
     def event(self, event):
-        if event.instrument not in self.eventPrices:
-            self.eventPrices[event.instrument] = []
+        # self.partialResult()
 
         self.last[event.instrument] = event.price
-
-        self.partialResult()
-
-        self.addPrice(event)
-
         return self.push(event)
 
     def push(self, event):
@@ -106,28 +97,18 @@ class Strategy():
 
         '''
 
-        for instrument in self.eventPrices.keys():
-
-            if instrument not in self.parcialResult:
-                self.parcialResult[instrument] = []
-                
-
-            if isinstance(self.last[instrument], float):
+        for instrument, result in self.result.items():
+            if (isinstance(self.last[instrument], float)):
                 price = self.last[instrument]
             else:
                 price = self.last[instrument][3]
 
-            if instrument in self.position:
-                if self.position[instrument] != 0:
-                    pnl = self.result[instrument] + \
-                        self.position[instrument] * price
-                else:
-                    pnl = self.parcialResult[instrument][-1]
-            else:
-                pnl = 0                
+            if (self.position[instrument] != 0):
+                pnl = result + \
+                    self.position[instrument] * price
 
             self.parcialResult[instrument].append(pnl)
-            
+
         return
 
     def totalNotional(self):
@@ -141,14 +122,6 @@ class Strategy():
         for result in self.result.values():
             res += result
         return res
-
-    def addPrice(self, event):
-        if (isinstance(event.price, float)):
-            if event.type == "TRADE":
-                self.eventPrices[event.instrument].append(event.price)
-        else:
-            self.eventPrices[event.instrument].append(event.price[3])
-
 
     def summary(self, tax=0.00024, fee=0):
 
